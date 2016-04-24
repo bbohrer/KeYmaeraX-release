@@ -60,7 +60,9 @@ class CexSearchTests  extends TacticTestBase {
   it should "get the easy false cases right" in withMathematica(implicit qeTool => {
     algos.foreach({case algo =>
       easyFalseFmls.foreach({case fml =>
-        algo(ProgramSearchNode(fml)).isDefined shouldBe true
+        val result = algo(ProgramSearchNode(fml))
+        print("Testing algo " + algo.getClass.getSimpleName + " for falseness of " + fml + "\n")
+        result.isDefined shouldBe true
       })
     })
   })

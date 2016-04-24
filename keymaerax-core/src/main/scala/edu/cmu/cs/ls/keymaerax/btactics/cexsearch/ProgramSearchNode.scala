@@ -1,5 +1,7 @@
 package edu.cmu.cs.ls.keymaerax.btactics.cexsearch
 
+import edu.cmu.cs.ls.keymaerax.bellerophon.{BelleProvable, SequentialInterpreter}
+import edu.cmu.cs.ls.keymaerax.btactics.TactixLibrary
 import edu.cmu.cs.ls.keymaerax.core._
 
 /**
@@ -8,7 +10,7 @@ import edu.cmu.cs.ls.keymaerax.core._
   * Created by bbohrer on 4/24/16.
   */
 object ProgramSearchNode {
-  def apply(fml:Formula):ProgramSearchNode = {
+  def apply(fml:Formula)(implicit qeTool:QETool):ProgramSearchNode = {
     fml match {
       case (Imply(pre, Box(prog, post))) =>
         new ProgramSearchNode(pre,prog,post)
@@ -16,7 +18,8 @@ object ProgramSearchNode {
     }
   }
 }
-class ProgramSearchNode (pre: Formula, prog: Program, post: Formula) extends AnyRef with SearchNode {
+
+class ProgramSearchNode (pre: Formula, prog: Program, post: Formula)(implicit qeTool: QETool) extends SearchNode {
 
   /* We are at a goal state if there is a counterexample to pre -> [prog] post that we can find without any more
   * search, which is to say there are no programs left. Since our representation requires that we always have some "program",
@@ -28,7 +31,18 @@ class ProgramSearchNode (pre: Formula, prog: Program, post: Formula) extends Any
   * */
   def goal = (prog, post) match {
     case (_, Box(_,_)) => None
-    case (Test(True), _) => None
+    case (Test(True), _) =>
+      /* Stupid hack - QE fails on formulas that contain no variables, so change P to (x = x) -> P for fresh x, which
+       * is equivalent
+       */
+      val fml = Imply(pre, post)
+      val freshVar = UniqueVariable.make
+      val hackFml = Imply(Equal(freshVar, freshVar), fml)
+      TactixLibrary.tool.findCounterExample(hackFml) match {
+        case Some(cex) => Some(ConcreteState(cex))
+        case None => None
+       }
+
     case _ => None
   }
 
