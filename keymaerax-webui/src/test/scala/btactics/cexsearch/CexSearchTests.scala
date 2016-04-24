@@ -57,7 +57,7 @@ class CexSearchTests  extends TacticTestBase {
     })
   })
 
-  "Every algorithm" should "get the easy false cases right" in withMathematica(implicit qeTool => {
+  it should "get the easy false cases right" in withMathematica(implicit qeTool => {
     algos.foreach({case algo =>
       easyFalseFmls.foreach({case fml =>
         algo(ProgramSearchNode(fml)).isDefined shouldBe true
