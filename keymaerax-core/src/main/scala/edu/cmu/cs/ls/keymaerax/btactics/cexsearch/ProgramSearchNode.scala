@@ -7,6 +7,15 @@ import edu.cmu.cs.ls.keymaerax.core._
   * We maintain the invariant that pre is program-free, but post is allowed to have the form [prog'] Q'.
   * Created by bbohrer on 4/24/16.
   */
+object ProgramSearchNode {
+  def apply(fml:Formula):ProgramSearchNode = {
+    fml match {
+      case (Imply(pre, Box(prog, post))) =>
+        new ProgramSearchNode(pre,prog,post)
+      case _ => throw new IllegalArgumentException("ProgramSearchNode expects formula of shape P -> [a] Q")
+    }
+  }
+}
 class ProgramSearchNode (pre: Formula, prog: Program, post: Formula) extends AnyRef with SearchNode {
 
   /* We are at a goal state if there is a counterexample to pre -> [prog] post that we can find without any more
