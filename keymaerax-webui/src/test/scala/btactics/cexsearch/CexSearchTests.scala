@@ -34,7 +34,9 @@ class CexSearchTests  extends TacticTestBase {
     "x = 2 -> [?x < 1;] x = 3",
     "(x = 7 & y < 3) -> [x := x + 1; y := y + x;](x >= 7.3 & y <= 12)",
     "(x = 0 | (x > 0 -> y = 7)) -> [x := x - 1; y := -y;] (x <= -1 | y = -7)",
-    "y = x + 2 -> [x := (x + 2)^2 ;++ ?y >= 2;] x >= 0"
+    "y = x + 2 -> [x := (x + 2)^2 ;++ ?y >= 2;] x >= 0",
+    "y' = x' + 2 -> [x' := (x' + 2)^2 ;++ ?y' >= 2;] x' >= 0",
+    "true -> [x :=*;] ((x + 2)^8 >= 0)"
   ).map({case str => str.asFormula})
 
   val easyFalseFmls = List(
@@ -45,7 +47,9 @@ class CexSearchTests  extends TacticTestBase {
     "x = 2 -> [?x > 1;] x = 3",
     "(x = 7 & y < 3) -> [x := x + 1; y := y + x;](x <= 7.3 | y > 12)",
     "(x = 2 | (x > 10 -> y = 7)) -> [x := x - 1; y := -y;] (x <= -1 | y = -7)",
-    "y = x + 2 -> [x := (x + 2)^2 ;++ ?y < -10;] x >= 0"
+    "y = x + 2 -> [x := (x + 2)^2 ;++ ?y < -10;] x >= 0",
+    "y' = x' + 2 -> [x' := (x' + 2)^2 ;++ ?y' < -10;] x' >= 0",
+    "true -> [x :=*;] x > 0"
   ).map({case str => str.asFormula})
 
 

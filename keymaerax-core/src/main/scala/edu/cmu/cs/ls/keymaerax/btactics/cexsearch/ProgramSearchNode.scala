@@ -53,12 +53,11 @@ case class ProgramSearchNode (pre: Formula, prog: Program, post: Formula)(implic
   def children = {
     val kids =
     prog match {
-      case Test(True) => {
+      case Test(True) =>
         post match {
           case Box(a, newPost) => List(ProgramSearchNode(pre, a, newPost))
           case _ => Nil
         }
-      }
       case Test(fml) => List(ProgramSearchNode(And(pre, fml), Test(True), post))
       case Assign(x, e) =>
         val vars = StaticSemantics.boundVars(post)
@@ -72,8 +71,30 @@ case class ProgramSearchNode (pre: Formula, prog: Program, post: Formula)(implic
           val newPost = post.replaceAll(x, e)
           List(ProgramSearchNode(pre, Test(True), newPost))
         }
+      case DiffAssign(DifferentialSymbol(x), e) =>
+        val vars = StaticSemantics.boundVars(post)
+        /* P -> [x := e] Q goes to P & x' = e -> [?true] {x|->x'}Q for fresh x' */
+        if (vars.contains(DifferentialSymbol(x))) {
+          val xPrime = UniqueVariable.make
+          val newPost = SyntacticURename(x, xPrime)(post)
+          List(ProgramSearchNode(And(pre, Equal(x, e)), Test(True), newPost))
+        } else {
+          /* P -> [x := e] Q goes to P -> [?true] {x |-> e} Q */
+          val newPost = post.replaceAll(DifferentialSymbol(x), e)
+          List(ProgramSearchNode(pre, Test(True), newPost))
+        }
+      case AssignAny(x) => List(ProgramSearchNode(pre, Test(True), Forall(immutable.Seq(x), post)))
       case Compose(a, b) => List(ProgramSearchNode(pre, a, Box(b, post)))
       case Choice(a, b) => List(ProgramSearchNode(pre, a, post), ProgramSearchNode(pre, b, post))
+      case Loop(a) => ???
+      case ODESystem(ode, constraint) => ???
+      case _: AtomicODE => ???
+      case _: DifferentialProduct => ???
+      case _: Dual => throw new IllegalArgumentException("Hybrid games not supported")
+      /* This should really never come up during execution, but if it does, since this means "I can be any program"
+      * it means we could make the state whatever we want, which simply means the precondition goes out the window
+      * and the precondition needs to hold in every possible state */
+      case ProgramConst (_) | DifferentialProgramConst(_) => List(ProgramSearchNode(True, Test(True), post))
 
     }
     kids.toSet
