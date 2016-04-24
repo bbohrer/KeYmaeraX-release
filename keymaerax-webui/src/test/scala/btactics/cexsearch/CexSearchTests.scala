@@ -52,18 +52,32 @@ class CexSearchTests  extends TacticTestBase {
     "true -> [x :=*;] x > 0"
   ).map({case str => str.asFormula})
 
+  val loopFalseFmls = List(
+    "true -> [{?true;}*] false",
+    "x=0 -> [{x := x + 1;}*] x < 5"
+  ).map({case str => str.asFormula})
 
   "Every algorithm" should "get the easy true cases right" in withMathematica(implicit qeTool => {
     algos.foreach({case algo =>
-        easyTrueFmls.foreach({case fml =>
+      easyTrueFmls.foreach({case fml =>
         algo(ProgramSearchNode(fml)).isDefined shouldBe false
-        })
+      })
     })
   })
 
   it should "get the easy false cases right" in withMathematica(implicit qeTool => {
     algos.foreach({case algo =>
       easyFalseFmls.foreach({case fml =>
+        val result = algo(ProgramSearchNode(fml))
+        print("Testing algo " + algo.getClass.getSimpleName + " for falseness of " + fml + "\n")
+        result.isDefined shouldBe true
+      })
+    })
+  })
+
+  it should "get the false loop cases right" in withMathematica(implicit qeTool => {
+    algos.foreach({ case algo =>
+      loopFalseFmls.foreach({ case fml =>
         val result = algo(ProgramSearchNode(fml))
         print("Testing algo " + algo.getClass.getSimpleName + " for falseness of " + fml + "\n")
         result.isDefined shouldBe true

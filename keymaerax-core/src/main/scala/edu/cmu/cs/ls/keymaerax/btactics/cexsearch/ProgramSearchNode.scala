@@ -65,7 +65,7 @@ case class ProgramSearchNode (pre: Formula, prog: Program, post: Formula)(implic
         if (vars.contains(x)) {
           val xPrime = UniqueVariable.make
           val newPost = SyntacticURename(x, xPrime)(post)
-          List(ProgramSearchNode(And(pre, Equal(x, e)), Test(True), newPost))
+          List(ProgramSearchNode(And(pre, Equal(xPrime, e)), Test(True), newPost))
         } else {
           /* P -> [x := e] Q goes to P -> [?true] {x |-> e} Q */
           val newPost = post.replaceAll(x, e)
@@ -77,7 +77,7 @@ case class ProgramSearchNode (pre: Formula, prog: Program, post: Formula)(implic
         if (vars.contains(DifferentialSymbol(x))) {
           val xPrime = UniqueVariable.make
           val newPost = SyntacticURename(x, xPrime)(post)
-          List(ProgramSearchNode(And(pre, Equal(x, e)), Test(True), newPost))
+          List(ProgramSearchNode(And(pre, Equal(xPrime, e)), Test(True), newPost))
         } else {
           /* P -> [x := e] Q goes to P -> [?true] {x |-> e} Q */
           val newPost = post.replaceAll(DifferentialSymbol(x), e)
@@ -86,7 +86,7 @@ case class ProgramSearchNode (pre: Formula, prog: Program, post: Formula)(implic
       case AssignAny(x) => List(ProgramSearchNode(pre, Test(True), Forall(immutable.Seq(x), post)))
       case Compose(a, b) => List(ProgramSearchNode(pre, a, Box(b, post)))
       case Choice(a, b) => List(ProgramSearchNode(pre, a, post), ProgramSearchNode(pre, b, post))
-      case Loop(a) => ???
+      case Loop(a) => List(ProgramSearchNode(pre, Test(True), post), ProgramSearchNode(pre, a, Box(Loop(a), post)))
       case ODESystem(ode, constraint) => ???
       case _: AtomicODE => ???
       case _: DifferentialProduct => ???
