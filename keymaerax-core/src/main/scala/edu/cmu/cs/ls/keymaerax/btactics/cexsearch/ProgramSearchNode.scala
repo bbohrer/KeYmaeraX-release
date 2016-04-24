@@ -53,7 +53,12 @@ case class ProgramSearchNode (pre: Formula, prog: Program, post: Formula)(implic
   def children = {
     val kids =
     prog match {
-      case Test(True) => Nil
+      case Test(True) => {
+        post match {
+          case Box(a, newPost) => List(ProgramSearchNode(pre, a, newPost))
+          case _ => Nil
+        }
+      }
       case Test(fml) => List(ProgramSearchNode(And(pre, fml), Test(True), post))
       case Assign(x, e) =>
         val vars = StaticSemantics.boundVars(post)
@@ -67,6 +72,9 @@ case class ProgramSearchNode (pre: Formula, prog: Program, post: Formula)(implic
           val newPost = post.replaceAll(x, e)
           List(ProgramSearchNode(pre, Test(True), newPost))
         }
+      case Compose(a, b) => List(ProgramSearchNode(pre, a, Box(b, post)))
+      case Choice(a, b) => List(ProgramSearchNode(pre, a, post), ProgramSearchNode(pre, b, post))
+
     }
     kids.toSet
   }
