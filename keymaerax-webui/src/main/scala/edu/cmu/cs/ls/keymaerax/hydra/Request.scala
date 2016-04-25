@@ -138,6 +138,7 @@ class CounterExampleRequest(db: DBAbstraction, userId: String, proofId: String, 
     } else {
       try {
         try {
+          /* @TODO I think this leaks a thread */
           val f = Future { BreadthFirstSearch(ProgramSearchNode(fml)(TactixLibrary.tool)) }
           val timeout = Duration(10000, TimeUnit.MILLISECONDS)
           Await.result(f, timeout) match {

@@ -562,6 +562,12 @@ class CounterExampleResponse(kind: String, fml: Formula = True, cex: Map[NamedSy
 
   private def createCexFormula(fml: Formula, cex: Map[NamedSymbol, Term]): Formula = {
     ExpressionTraversal.traverse(new ExpressionTraversal.ExpressionTraversalFunction {
+      /* @TODO Do a better job of replacements in formulas. */
+      override def preF(p: PosInExpr, f: Formula): Either[Option[ExpressionTraversal.StopTraversal], Formula] = f match {
+        case _ : Box | _ : Diamond => Left(Some(ExpressionTraversal.stop))
+        case _ => Right(f)
+      }
+
       override def preT(p: PosInExpr, t: Term): Either[Option[ExpressionTraversal.StopTraversal], Term] = t match {
         case v: Variable => Right(cex.get(v).get)
         case FuncOf(fn, _) => Right(cex.get(fn).get)
