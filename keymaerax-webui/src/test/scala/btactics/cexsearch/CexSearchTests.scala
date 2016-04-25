@@ -48,14 +48,19 @@ class CexSearchTests  extends TacticTestBase {
     "(x = 7 & y < 3) -> [x := x + 1; y := y + x;](x <= 7.3 | y > 12)",
     "(x = 2 | (x > 10 -> y = 7)) -> [x := x - 1; y := -y;] (x <= -1 | y = -7)",
     "y = x + 2 -> [x := (x + 2)^2 ;++ ?y < -10;] x >= 0",
-    "y' = x' + 2 -> [x' := (x' + 2)^2 ;++ ?y' < -10;] x' >= 0",
-    "true -> [x :=*;] x > 0"
+    "y' = x' + 2 -> [x' := (x' + 2)^2 ;++ ?y' < -10;] x' >= 0"
   ).map({case str => str.asFormula})
 
   val loopFalseFmls = List(
     "true -> [{?true;}*] false",
+    "true -> [x :=*;] x > 0",
     "x=0 -> [{x := x + 1;}*] x < 5"
   ).map({case str => str.asFormula})
+
+  /* Can't hope for a counterexample on most of these */
+  val loopTrueFmls = List(
+    "x=0 -> [{x := x + 1;}*] x >= 5".asFormula
+  )
 
   "Every algorithm" should "get the easy true cases right" in withMathematica(implicit qeTool => {
     algos.foreach({case algo =>
@@ -78,6 +83,16 @@ class CexSearchTests  extends TacticTestBase {
   it should "get the false loop cases right" in withMathematica(implicit qeTool => {
     algos.foreach({ case algo =>
       loopFalseFmls.foreach({ case fml =>
+        val result = algo(ProgramSearchNode(fml))
+        print("Testing algo " + algo.getClass.getSimpleName + " for falseness of " + fml + "\n")
+        result.isDefined shouldBe true
+      })
+    })
+  })
+
+  it should "loop on this test" in withMathematica(implicit qeTool => {
+    algos.foreach({ case algo =>
+      loopTrueFmls.foreach({ case fml =>
         val result = algo(ProgramSearchNode(fml))
         print("Testing algo " + algo.getClass.getSimpleName + " for falseness of " + fml + "\n")
         result.isDefined shouldBe true

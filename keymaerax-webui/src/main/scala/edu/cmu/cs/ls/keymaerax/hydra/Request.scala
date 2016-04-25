@@ -35,8 +35,14 @@ import scala.io.Source
 import spray.json._
 import spray.json.DefaultJsonProtocol._
 import java.io.{File, FileInputStream, FileOutputStream}
+import java.util.concurrent.TimeUnit
 
 import edu.cmu.cs.ls.keymaerax.btactics.ExpressionTraversal.{ExpressionTraversalFunction, StopTraversal}
+import edu.cmu.cs.ls.keymaerax.btactics.cexsearch.{BreadthFirstSearch, ProgramSearchNode}
+
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, Future, TimeoutException}
+import scala.concurrent.ExecutionContext.Implicits.global
 
 /**
  * A Request should handle all expensive computation as well as all
@@ -130,7 +136,22 @@ class CounterExampleRequest(db: DBAbstraction, userId: String, proofId: String, 
         case ex: MathematicaComputationAbortedException => new CounterExampleResponse("cex.timeout") :: Nil
       }
     } else {
-      new CounterExampleResponse("cex.nonfo") :: Nil
+      try {
+        try {
+          val f = Future { BreadthFirstSearch(ProgramSearchNode(fml)(TactixLibrary.tool)) }
+          val timeout = Duration(10000, TimeUnit.MILLISECONDS)
+          Await.result(f, timeout) match {
+            //@todo return actual sequent, use collapsiblesequentview to display counterexample
+            case Some(cex) => new CounterExampleResponse("cex.found", fml, cex.map) :: Nil
+            case None => new CounterExampleResponse("cex.none") :: Nil
+          }
+        } catch {
+          case ex: TimeoutException => new CounterExampleResponse("cex.timeout") :: Nil
+          case ex: MathematicaComputationAbortedException => new CounterExampleResponse("cex.timeout") :: Nil
+        }
+      } catch {
+        case e: IllegalArgumentException => new CounterExampleResponse("cex.nonfo") :: Nil
+      }
     }
   }
 }

@@ -1,6 +1,7 @@
 package edu.cmu.cs.ls.keymaerax.btactics.cexsearch
 
 /**
+  * @TODO Bounded-depth search, Iterative-deepening, A*, IDA*
   * Created by bbohrer on 4/24/16.
   */
 object BreadthFirstSearch extends (SearchNode => Option[ConcreteState]) {

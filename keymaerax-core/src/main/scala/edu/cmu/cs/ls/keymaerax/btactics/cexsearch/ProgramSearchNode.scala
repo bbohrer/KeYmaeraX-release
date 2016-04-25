@@ -16,6 +16,7 @@ object ProgramSearchNode {
   def apply(fml:Formula)(implicit qeTool:QETool):ProgramSearchNode = {
     fml match {
       case (Imply(pre, Box(prog, post))) => ProgramSearchNode(pre,prog,post)
+      case (Imply(a, Imply(b, c))) => apply(Imply(And(a,b), c))
       case _ => throw new IllegalArgumentException("ProgramSearchNode expects formula of shape P -> [a] Q")
     }
   }
