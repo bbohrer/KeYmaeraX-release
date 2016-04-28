@@ -59,7 +59,13 @@ class CexSearchTests  extends TacticTestBase {
     "true -> [{?true;}*] false",
     "true -> [x :=*;] x > 0",
     "x=0 -> [{x := x + 1;}*] x < 5",
-    "true -> [x:=0; {x := x; ++ x := x + 1;}*] x <= 15"
+    /* Should fail for DFS, succeed for BFS (after a long time) */
+    "true -> [x:=0; {x := x; ++ x := x + 1;}*] x <= 15",
+    /* See which branch leads to a contradiction faster... */
+    "true -> [x:= 0; {x := x + 1; ++ x := (x+1)^(x + 5);}*] x <= 10",
+    /* This will probably break A*, since the "simple" case makes no progress
+    * toward the goal, but the "complicated" case does. */
+    "true -> [x:= 0; y := 1; {x := x; ++ x := x + y;}*] x <= 10"
   ).map({case str => str.asFormula})
 
   /* Can't hope for a counterexample on most of these */
