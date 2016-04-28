@@ -3,9 +3,8 @@ package edu.cmu.cs.ls.keymaerax.btactics.cexsearch
 /**
   * Created by hgommers on 4/27/2016.
   */
-case class IteratedDeepening extends (SearchNode => Option[ConcreteState]) {
-
-    def apply(node:SearchNode) = {
+object IteratedDeepening extends (SearchNode => Option[ConcreteState]) {
+    def apply(node:SearchNode):Option[ConcreteState] = {
       var currDepth = 0
       while (true) {
         BoundedDFS(currDepth + 1)(node) match {
@@ -13,6 +12,7 @@ case class IteratedDeepening extends (SearchNode => Option[ConcreteState]) {
           case Some(g) => return Some(g)
         }
       }
+      None
     }
 }
 
