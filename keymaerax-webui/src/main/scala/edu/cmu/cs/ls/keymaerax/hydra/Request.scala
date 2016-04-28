@@ -138,10 +138,7 @@ class CounterExampleRequest(db: DBAbstraction, userId: String, proofId: String, 
     } else {
       try {
         try {
-          /* @TODO I think this leaks a thread */
-          val f = Future { BreadthFirstSearch(ProgramSearchNode(fml)(TactixLibrary.tool)) }
-          val timeout = Duration(10000, TimeUnit.MILLISECONDS)
-          Await.result(f, timeout) match {
+          BreadthFirstSearch(ProgramSearchNode(fml)(TactixLibrary.tool), 10000) match {
             //@todo return actual sequent, use collapsiblesequentview to display counterexample
             case Some(cex) => new CounterExampleResponse("cex.found", fml, cex.map) :: Nil
             case None => new CounterExampleResponse("cex.none") :: Nil

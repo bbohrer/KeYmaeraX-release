@@ -14,10 +14,13 @@ import scala.collection.immutable
   */
 object ProgramSearchNode {
   def apply(fml:Formula)(implicit qeTool:QETool):ProgramSearchNode = {
-    fml match {
-      case (Imply(pre, Box(prog, post))) => ProgramSearchNode(pre,prog,post)
-      case (Imply(a, Imply(b, c))) => apply(Imply(And(a,b), c))
-      case _ => throw new IllegalArgumentException("ProgramSearchNode expects formula of shape P -> [a] Q")
+    (fml, fml.isFOL) match {
+      case (Imply(pre, Box(prog, post)), false) => ProgramSearchNode(pre,prog,post)
+      case (Imply(a, Imply(b, c)), false) => apply(Imply(And(a,b), c))
+      case (Box(prog, post), false) => ProgramSearchNode(True, prog, post)
+      case (_, true) => ProgramSearchNode(True, Test(True), fml)
+      case (_, false) =>
+        throw new IllegalArgumentException("ProgramSearchNode expects formula of shape P -> [a] Q")
     }
   }
 }
@@ -105,6 +108,6 @@ case class ProgramSearchNode (pre: Formula, prog: Program, post: Formula)(implic
   * looks at both how expensive a state is to evaluate and how likely it is to be a counterexample. In particular, since
   * deciding first-order logic formulas is O(2^(2^n)) in number of variables, we should work that into our cost for
   * leaves. */
-  def value:Float = 0
+  def value:Double = Heuristics.QECost(Imply(pre, Box(prog, post)))
 
 }

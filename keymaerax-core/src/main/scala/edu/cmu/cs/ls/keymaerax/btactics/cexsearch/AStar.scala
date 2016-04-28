@@ -12,10 +12,13 @@ case class QueueElement(node:SearchNode, dist: Double) extends Ordered[QueueElem
     (heuristicValue + dist).compare(that.heuristicValue + that.dist)
   }
 }
-object AStar extends (SearchNode => Option[ConcreteState]) {
+object AStar extends ((SearchNode, Long) => Option[ConcreteState]) {
 
-  def astar(frontier:mutable.PriorityQueue[QueueElement]):Option[ConcreteState] = {
+  def astar(frontier:mutable.PriorityQueue[QueueElement], stopBy:Long):Option[ConcreteState] = {
     while (frontier.nonEmpty) {
+      if (System.currentTimeMillis() > stopBy) {
+        return None
+      }
       frontier.dequeue match {
         case QueueElement (node, dist) =>
           node.goal match {
@@ -29,5 +32,5 @@ object AStar extends (SearchNode => Option[ConcreteState]) {
     None
   }
 
-  def apply(node:SearchNode) = astar(mutable.PriorityQueue(QueueElement(node, 0)))
+  def apply(node:SearchNode, stopBy:Long) = astar(mutable.PriorityQueue(QueueElement(node, 0)), stopBy)
 }

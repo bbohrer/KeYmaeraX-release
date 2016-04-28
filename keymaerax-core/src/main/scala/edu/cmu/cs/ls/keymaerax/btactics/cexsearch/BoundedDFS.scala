@@ -3,11 +3,14 @@ package edu.cmu.cs.ls.keymaerax.btactics.cexsearch
 /**
   * Created by hgommers on 4/27/2016.
   */
-case class BoundedDFS (maxDepth: Int) extends (SearchNode => Option[ConcreteState]) {
-  def dfs (front: List[List[SearchNode]], maxDepth: Int) : Option[ConcreteState] = {
+case class BoundedDFS (maxDepth: Int) extends ((SearchNode, Long) => Option[ConcreteState]) {
+  def dfs (front: List[List[SearchNode]], maxDepth: Int, stopBy:Long) : Option[ConcreteState] = {
     var frontier = front
     var visited = Set.empty[SearchNode]
     while (true) {
+      if (System.currentTimeMillis() > stopBy) {
+        return None
+      }
       frontier match {
         case Nil => return None
         case Nil :: rest => frontier = rest
@@ -34,5 +37,5 @@ case class BoundedDFS (maxDepth: Int) extends (SearchNode => Option[ConcreteStat
     None
   }
 
-  def apply(node:SearchNode) = dfs(List(List(node)), maxDepth)
+  def apply(node:SearchNode, stopBy:Long) = dfs(List(List(node)), maxDepth, stopBy)
 }

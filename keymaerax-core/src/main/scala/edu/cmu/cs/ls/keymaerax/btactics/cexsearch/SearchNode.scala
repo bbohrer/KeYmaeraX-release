@@ -5,6 +5,6 @@ package edu.cmu.cs.ls.keymaerax.btactics.cexsearch
   */
 trait SearchNode {
   def goal: Option[ConcreteState]
-  def value: Float
+  def value: Double
   def children:Set[SearchNode]
 }
