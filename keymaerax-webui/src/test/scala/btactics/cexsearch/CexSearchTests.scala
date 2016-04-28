@@ -1,11 +1,18 @@
 package btactics.cexsearch
 
+import java.util.concurrent.{TimeUnit, TimeoutException}
+
 import edu.cmu.cs.ls.keymaerax.btactics.TacticTestBase
 import edu.cmu.cs.ls.keymaerax.bellerophon.BelleError
 import edu.cmu.cs.ls.keymaerax.btactics.cexsearch._
 import edu.cmu.cs.ls.keymaerax.core._
 import edu.cmu.cs.ls.keymaerax.parser.StringConverter._
 import edu.cmu.cs.ls.keymaerax.tools.{CounterExampleTool, DiffSolutionTool, ToolBase, ToolEvidence}
+import org.joda.time.DateTime
+
+import scala.concurrent.{Await, Future}
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.Duration
 
 /**
   * Test cases for counterexample search. We generally don't care what the counterexample is as long as it's  a counterexample.
@@ -20,7 +27,9 @@ class CexSearchTests  extends TacticTestBase {
   val algos: List[(SearchNode => Option[ConcreteState])] =
     List(
       BreadthFirstSearch,
+      BoundedDFS(4),
       BoundedDFS(10),
+      BoundedDFS(20),
       AStar
       )
 
@@ -60,18 +69,20 @@ class CexSearchTests  extends TacticTestBase {
     "true -> [x :=*;] x > 0",
     "x=0 -> [{x := x + 1;}*] x < 5",
     /* Should fail for DFS, succeed for BFS (after a long time) */
-    "true -> [x:=0; {x := x; ++ x := x + 1;}*] x <= 15",
+    "true -> [x:=0; {x := x; ++ x := x + 1;}*] x <= 4",
     /* See which branch leads to a contradiction faster... */
-    "true -> [x:= 0; {x := x + 1; ++ x := (x+1)^(x + 5);}*] x <= 10",
+    "true -> [x:= 0; {x := x + 1; ++ x := (x+1)^(x + 5);}*] x <= 4",
     /* This will probably break A*, since the "simple" case makes no progress
     * toward the goal, but the "complicated" case does. */
-    "true -> [x:= 0; y := 1; {x := x; ++ x := x + y;}*] x <= 10"
+    "true -> [x:= 0; y := 1; {x := x; ++ x := x + y;}*] x <= 4"
   ).map({case str => str.asFormula})
 
   /* Can't hope for a counterexample on most of these */
   val loopTrueFmls = List(
     "x=0 -> [{x := x + 1;}*] x >= 5".asFormula
   )
+
+  val allFalseCases = List.concat(easyFalseFmls,loopFalseFmls)
 
   "Every algorithm" should "get the easy true cases right" in withMathematica(implicit qeTool => {
     algos.foreach({case algo =>
@@ -81,46 +92,48 @@ class CexSearchTests  extends TacticTestBase {
     })
   })
 
-  it should "get the easy false cases right" in withMathematica(implicit qeTool => {
+
+  it should "get the false cases right" in withMathematica(implicit qeTool => {
+    var theStr = ""
     algos.foreach({case algo =>
-      easyFalseFmls.foreach({case fml =>
-        val result = algo(ProgramSearchNode(fml))
-        print("Testing algo " + algo.getClass.getSimpleName + " for falseness of " + fml + "\n")
-//        result.isDefined shouldBe true
+      theStr = theStr + algo.getClass.getSimpleName
+      val start = DateTime.now
+      allFalseCases.foreach({case fml =>
+        val f = Future { algo(ProgramSearchNode(fml)) }
+        val timeout = Duration(100, TimeUnit.MILLISECONDS)
+        try {
+        Await.result(f, timeout) match {
+          case Some(result) => theStr = theStr + ",1"
+          case None => theStr + ",0"
+        }} catch {
+          case ex: ProverException => theStr = theStr + ",0"
+          case ex: TimeoutException => theStr = theStr + ",0"
+        }
       })
+      val diff = (DateTime.now.millisOfDay.get - start.millisOfDay.get).toDouble / 1000.0
+      theStr = theStr + "," + diff + "\n"
     })
+    print ("CSV to the rescue: \n" + theStr)
   })
 
-  it should "get the false loop cases right" in withMathematica(implicit qeTool => {
-    algos.foreach({ case algo =>
-      loopFalseFmls.foreach({ case fml =>
-        val result = algo(ProgramSearchNode(fml))
-        print("Testing algo " + algo.getClass.getSimpleName + " for falseness of " + fml + "\n")
-        //result.isDefined shouldBe true
-      })
-    })
-  })
 
   it should "loop on this test" in withMathematica(implicit qeTool => {
+    var theStr = ""
     algos.foreach({ case algo =>
+      theStr = theStr + algo.getClass.getSimpleName
       loopTrueFmls.foreach({ case fml =>
         val result = algo(ProgramSearchNode(fml))
+        theStr = theStr + (if (result.isDefined) { ",1"} else {",0"})
         print("Testing algo " + algo.getClass.getSimpleName + " for falseness of " + fml + "\n")
 //        result.isDefined shouldBe true
       })
+      theStr = theStr + "\n"
     })
+    print ("CSV to the rescue: \n" + theStr)
   })
 
   /* HOW TO TIMEOUT
   *
-    val f = Future { <expression that can time out }
-    val timeout = Duration(10000, TimeUnit.MILLISECONDS)
-    Await.result(f, timeout) match {
-      case Some(result) => <finished on time, found counterexample>
-      case None => <finished, didn't find counterexample>
-          }
-        } catch {
-          case ex: TimeoutException => <timed out >
-        }
+
   * */
 }
