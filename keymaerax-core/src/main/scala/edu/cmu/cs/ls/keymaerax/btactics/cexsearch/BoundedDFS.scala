@@ -3,7 +3,7 @@ package edu.cmu.cs.ls.keymaerax.btactics.cexsearch
 /**
   * Created by hgommers on 4/27/2016.
   */
-class BoundedDFS (maxDepth: Int) extends (SearchNode => Option[ConcreteState]) {
+case class BoundedDFS (maxDepth: Int) extends (SearchNode => Option[ConcreteState]) {
   def dfs (frontier: List[SearchNode], visited: Set[SearchNode], currNode:SearchNode, currDepth:Int, maxDepth: Int) : Option[ConcreteState] = {
     if (currDepth > maxDepth) None
     else {
